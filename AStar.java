@@ -27,6 +27,10 @@ public class AStar
 
     }
 
+    public void deletePath(int pathID) {
+        pathCache.remove(pathID);
+    }
+
     private static double heuristicEstimatedCost(Node curNode, Node goalNode)
     {
         //4-way: using Manhattan

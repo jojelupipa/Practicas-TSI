@@ -38,7 +38,7 @@ public class PathFinder {
         this.astar = new AStar(this);
 
         init();
-        runAll();
+        //runAll();
 
         if(VERBOSE)
         {
