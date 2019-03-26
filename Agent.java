@@ -5,6 +5,7 @@ import java.util.Vector;
 
 import core.game.StateObservation;
 import ontology.Types;
+import ontology.Types.ACTIONS;
 import tools.ElapsedCpuTimer;
 import tools.Vector2d;
 
@@ -22,6 +23,7 @@ public class Agent extends BaseAgent {
 	private final static int HAYPIEDRA = 2;
 	private final static int HAYGEMAS = -1;
 	private final static int GEMINACCESIBLE = 1000;
+	private final static int DISTANCIA_PANICO = 2;
 	private int nQuieto;
 	
 
@@ -34,6 +36,10 @@ public class Agent extends BaseAgent {
 		ArrayList<Integer> tipoObs = new ArrayList();
 		tipoObs.add(0);
 		tipoObs.add(7);
+		// Murciélagos y escorpiones para esquivar en conjunto con el agente reactivo
+		// Así al recalcular el camino evitará al enemigo
+		tipoObs.add(11);
+		tipoObs.add(10);
 		pF = new PathFinder(tipoObs);
 		pF.run(sO);
 		ultPos = getPlayer(sO);
@@ -58,11 +64,14 @@ public class Agent extends BaseAgent {
 		else
 			++nQuieto;
 
+		// Elemento reactivo: Si encontramos un obstáculo no mortal, recalcular ruta
+		
 		if (nQuieto > 4) {
 			path.clear();
 			pF.run(stateObs);
 			//System.out.println("Me he bloqueado");
 		}
+		
 
 		if(!path.isEmpty()) {
         	// Ejecuto el plan
@@ -101,10 +110,10 @@ public class Agent extends BaseAgent {
 				Vector2d gPos = new Vector2d(gema.getX(), gema.getY());
 				int id = getID(aPos) * 10000 + getID(gPos);
 				path = findPath(aPos, gPos);
-				if (path == null)
-					System.out.println("Meh");
-				else
+				
+				if (path != null) 				 // Imprimimos el camino
 					pF.astar.printPath(id, path);
+				
             } else {
         		// Obtengo la posición del portal más cercano y obtengo la ruta
 				// TODO: mejorar el criterio de busqueda (añadir heuristica)
@@ -116,10 +125,42 @@ public class Agent extends BaseAgent {
         }
 		ultPos = avatar;
 		//System.out.println(nextAction);
+		
+		// 	Elemento reactivo: Si nos acercamos a un enemigo, recalcular ruta
+		ArrayList<Observation>[] enemigos= getEnemiesList(stateObs);
+		
+		for (int i = 0; i < enemigos.length; i++) {
+			for (Observation enemigo_actual : enemigos[i]){
+				if (avatar.getManhattanDistance(enemigo_actual) <= DISTANCIA_PANICO) {
+					path.clear();
+					pF.run(stateObs);
+					System.out.println("Panico en las calles");
+					nextAction = bestScapingAction(avatar, enemigo_actual);
+				}
+			}
+		}		
+		
+		
+		
+		try{Thread.sleep(50);}catch(InterruptedException e){System.out.println(e);}
 		return nextAction;
 	}
 
 	
+	private ACTIONS bestScapingAction(PlayerObservation avatar, Observation enemigo) {
+		Types.ACTIONS nextAction = Types.ACTIONS.ACTION_NIL;
+		if(enemigo.getX() > avatar.getX()) {
+			nextAction = Types.ACTIONS.ACTION_LEFT;
+		} else if (enemigo.getX() < avatar.getX()) {
+			nextAction = Types.ACTIONS.ACTION_RIGHT;
+		} else if (enemigo.getY() > avatar.getY()) {
+			nextAction = Types.ACTIONS.ACTION_DOWN;
+		} else if (enemigo.getY() < avatar.getY()) {
+			nextAction = Types.ACTIONS.ACTION_UP;
+		}		
+		return nextAction;
+	}
+
 	private void printObservationGrid(ArrayList<Observation>[][] observationGrid) {
 		for(int i = 0; i < observationGrid.length; i++) {
 			for(int j = 0; j < observationGrid[0].length; j++) {
