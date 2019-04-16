@@ -143,6 +143,8 @@ public class AStar
 
     }
 
+
+
     private ArrayList<Node> _findPath(Node start, Node goal)
     {
         Node node = null;
@@ -173,6 +175,10 @@ public class AStar
                 {
                     neighbour.totalCost = curDistance + node.totalCost;
                     neighbour.estimatedCost = heuristicEstimatedCost(neighbour, goal);
+                    if (pathfinder.areaEnemies(neighbour))
+                        neighbour.estimatedCost += 5000;
+                    if (pathfinder.rockAbove(neighbour))
+                        neighbour.estimatedCost += 500;
                     neighbour.parent = node;
 
                     openList.add(neighbour);
