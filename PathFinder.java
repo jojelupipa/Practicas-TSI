@@ -132,7 +132,7 @@ public class PathFinder {
 
 
 
-    private boolean isObstacle(int row, int col)
+    public boolean isObstacle(int row, int col)
     {
         if(row<0 || row>=grid.length) return true;
         if(col<0 || col>=grid[row].length) return true;
