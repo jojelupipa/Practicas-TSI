@@ -171,22 +171,20 @@ public class Agent extends BaseAgent {
 						}
 					}
 				} else {
-
 					Orientation ori = getPlayer(stateObs).getOrientation();
 					int x = (int) siguientePos.position.x - (int) aPos.x;
 					int y = (int) siguientePos.position.y - (int) aPos.y;
-					boolean orientado = (ori == Orientation.N && y == -1) || (ori == Orientation.S && y == 1) || (ori == Orientation.E && x == 1) || (ori == Orientation.W && x == -1);
-					if (!orientado) {
-
-						Node escape = new Node(new Vector2d(siguientePos.position.x + x, siguientePos.position.y + y));
-						ArrayList<Node> vecinosSig = pF.getNeighbours(siguientePos);
-						int i;
-						for (i = 0; i < vecinosSig.size() && !vecinosSig.get(i).position.equals(aPos); ++i);
-						vecinosSig.remove(i);
-						boolean enemigosCerca = false;
-						for (Node nodo : vecinosSig)
-							enemigosCerca = enemigosCerca || (estaExcavado((int) nodo.position.x, (int) nodo.position.y) && enemigoCerca(nodo) > 0);
-						if (enemigosCerca && (hayPiedra((int) escape.position.x, (int) escape.position.y - 1) || enemigoCerca(escape) > 0)) {
+					Node escape = new Node(new Vector2d(siguientePos.position.x + x, siguientePos.position.y + y));
+					ArrayList<Node> vecinosSig = pF.getNeighbours(siguientePos);
+					int i;
+					for (i = 0; i < vecinosSig.size() && !vecinosSig.get(i).position.equals(aPos); ++i);
+					vecinosSig.remove(i);
+					boolean enemigosCerca = false;
+					for (Node nodo : vecinosSig)
+						enemigosCerca = enemigosCerca || (estaExcavado((int) nodo.position.x, (int) nodo.position.y) && enemigoCerca(nodo) > 0);
+					if (enemigosCerca && (hayPiedra((int) escape.position.x, (int) escape.position.y - 1) || enemigoCerca(escape) > 0)) {
+						boolean orientado = (ori == Orientation.N && y == -1) || (ori == Orientation.S && y == 1) || (ori == Orientation.E && x == 1) || (ori == Orientation.W && x == -1);
+						if (orientado) {
 							ArrayList<Node> vecinos = pF.getNeighbours(new Node(aPos));
 							if (!vecinos.isEmpty()) {
 								ArrayList<Pair<Node, Integer>> posibilidades = new ArrayList<>();
@@ -198,8 +196,8 @@ public class Agent extends BaseAgent {
 										siguientePos = casilla.first;
 							} else
 								siguientePos = null;
-							gemaActual = null;
 						}
+						gemaActual = null;
 					}
 				}
 			}
