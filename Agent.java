@@ -237,7 +237,7 @@ public class Agent extends BaseAgent {
 		if (t > 300) {
 			try { Thread.sleep(250); } catch (InterruptedException e) { System.out.println(e); }
 		}
-		System.out.println(elapsedTimer.elapsedMillis());
+		//System.out.println(elapsedTimer.elapsedMillis());
 		return nextAction;
 	}
 
