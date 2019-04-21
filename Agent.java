@@ -128,7 +128,7 @@ public class Agent extends BaseAgent {
 				//int id = getID(aPos) * 10000 + getID(gPos);
 				path = findPath(aPos, gPos);
 				if (path == null) {
-					if (nQuieto > 30)
+					if (nQuieto > 15)
 						quitarRocas = true;
 					else
 						path = new ArrayList<>();
@@ -141,7 +141,7 @@ public class Agent extends BaseAgent {
 				Vector2d pPos = new Vector2d(portal.getX(), portal.getY());
 				path = findPath(aPos, pPos);
 				if (path == null) {
-					if (nQuieto > 30)
+					if (nQuieto > 15)
 						quitarRocas = true;
 					else
 						path = new ArrayList<>();
