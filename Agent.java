@@ -28,6 +28,7 @@ public class Agent extends BaseAgent {
 	private boolean piensa;
 	private Observation gemaActual;
 	private int t;
+	private ArrayList<Observation> piedras;
 	
 
 	public Agent(StateObservation sO, ElapsedCpuTimer elapsedTimer) {
@@ -52,6 +53,7 @@ public class Agent extends BaseAgent {
 		gemaActual = null;
 		t = 0;
 		quitarRocas = false;
+		piedras = getBouldersList(sO);
 	}
 
 	@Override
@@ -65,8 +67,15 @@ public class Agent extends BaseAgent {
         PlayerObservation avatar = getPlayer(stateObs);
 		Vector2d aPos = new Vector2d(avatar.getX(), avatar.getY());
 
-
 		//System.out.println(avatar.getX() + ", " + avatar.getY());
+
+		if (actualizarRocas(stateObs)) {
+			path.clear();
+			pF.run(stateObs);
+		}
+
+		if (nGems < REQUIREDGEMS && gemaActual != null && !esGema(gemaActual.getX(), gemaActual.getY()))
+			path.clear();
 
 		// Si el agente se mueve se elimina la acción del plan, si no entonces está quieto un turno
 		if ((avatar.getX() != ultPos.getX() || avatar.getY() != ultPos.getY()) && !path.isEmpty()){
@@ -82,7 +91,6 @@ public class Agent extends BaseAgent {
 		if ((aPos.y - 1 >= 0 && hayPiedra((int) aPos.x, (int) aPos.y - 1)) || enemigoCerca(new Node(aPos)) > 0) {
 			//System.out.println("Tengo una piedra encima");
 			path.clear();
-			pF.run(stateObs);
 			ArrayList<Node> casillasValidas = pF.getNeighbours(new Node(aPos));
 			piensa = false;
 			if (!casillasValidas.isEmpty()) {
@@ -98,9 +106,7 @@ public class Agent extends BaseAgent {
 		}
 
 		// Elemento deliberativo: si no ha reaccionado, piensa un plan
-		if ((piensa && !quitarRocas) || (piensa && nQuieto > 8)) {
-			path.clear();
-			pF.run(stateObs);
+		if (((piensa && !quitarRocas) || (piensa && nQuieto > 8)) && path.isEmpty()) {
 			if (nGems < REQUIREDGEMS) {
 				// Obtengo la lista de gemas ordenadas por la distancia hacia el jugador y las ordenamos con nuestra heurística
 				ArrayList<Observation> gemList = getGemsList(stateObs);
@@ -145,7 +151,7 @@ public class Agent extends BaseAgent {
 		}
 
 		if (piensa && quitarRocas) {
-			pF.run(stateObs);
+			path.clear();
 			path = abreCamino(stateObs);
 		}
 
@@ -224,7 +230,7 @@ public class Agent extends BaseAgent {
 		//System.out.println("Gema objetivo: "( + gemaActual.getX() + ", " + gemaActual.getY() + ")");
 		++t;
 		if (t > 300) {
-			try { Thread.sleep(2000); } catch (InterruptedException e) { System.out.println(e); }
+			try { Thread.sleep(250); } catch (InterruptedException e) { System.out.println(e); }
 		}
 		return nextAction;
 	}
@@ -286,15 +292,6 @@ public class Agent extends BaseAgent {
 		return nEnemigos;
 	}
 
-	private void printObservationGrid(ArrayList<Observation>[][] observationGrid) {
-		for(int i = 0; i < observationGrid.length; i++) {
-			for(int j = 0; j < observationGrid[0].length; j++) {
-				System.out.print(observationGrid[i][j] + " ");
-			}
-			System.out.println();
-		}
-	}
-
 	private boolean hayPiedra(int x, int y) {
 		if (x < 0 || x >= grid.length) return false;
 		if (y < 0 || y >= grid[x].length) return false;
@@ -328,10 +325,6 @@ public class Agent extends BaseAgent {
 						|| obs.getType() == ObservationType.BOULDER;
 		}
 		return !excavado;
-	}
-
-	private int getID(Vector2d punto) {
-		return ((int) punto.x) * 100 + ((int) punto.y);
 	}
 
 	private ArrayList<Node> findPath(Vector2d origen, Vector2d destino) {
@@ -482,6 +475,19 @@ public class Agent extends BaseAgent {
 			else
 				return 1;
 		});
+	}
+
+	private boolean actualizarRocas(StateObservation stateObs) {
+		boolean res = false;
+		ArrayList<Observation> nuevasPiedras = getBouldersList(stateObs);
+		if (nuevasPiedras.size() != piedras.size())
+			res = true;
+		if (!res)
+			for (int i = 0; i < piedras.size() && !res; ++i)
+				if (piedras.get(i).getX() != nuevasPiedras.get(i).getX() || piedras.get(i).getY() != nuevasPiedras.get(i).getY())
+					res = true;
+		piedras = nuevasPiedras;
+		return res;
 	}
 
 }
