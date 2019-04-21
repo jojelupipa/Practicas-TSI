@@ -54,6 +54,11 @@ public class Agent extends BaseAgent {
 		t = 0;
 		quitarRocas = false;
 		piedras = getBouldersList(sO);
+
+
+		ArrayList<Observation> gemas = getGemsList(sO);
+		for (Observation gem : gemas)
+			findPath(new Vector2d(ultPos.getX(), ultPos.getY()), new Vector2d(gem.getX(), gem.getY()));
 	}
 
 	@Override
@@ -232,6 +237,7 @@ public class Agent extends BaseAgent {
 		if (t > 300) {
 			try { Thread.sleep(250); } catch (InterruptedException e) { System.out.println(e); }
 		}
+		System.out.println(elapsedTimer.elapsedMillis());
 		return nextAction;
 	}
 
