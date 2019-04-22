@@ -136,8 +136,10 @@ public class Agent extends BaseAgent {
 			quitarRocas = true;
 		}
 		// Si hay un cambio o paso de espera recalculo objetivo
-		if (rocasActualizadas() || gemasActualizadas() || nQuieto > NTICKSESPERA)
+		if (rocasActualizadas() || gemasActualizadas() || nQuieto > NTICKSESPERA) {
 			objActual = null;
+			quitarRocas = false;
+		}
 	}
 
 	// --------------------------------------------------------------------
@@ -184,8 +186,6 @@ public class Agent extends BaseAgent {
 						for (i = 0; i < casillasBuenas.size() && pathAux == null; ++i)
 							pathAux = findPath(nJugador, casillasBuenas.get(i));
 						Node sol = casillasBuenas.get(i);
-						System.out.println(jugador);
-						System.out.println(pathAux.get(0).position);
 						objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
 						nQuieto = 0;
 					} else
@@ -267,8 +267,10 @@ public class Agent extends BaseAgent {
 
 			// Si llevo esperando un poco enrocado
 			if ((sinEscape || choqueEnemigo || sinEscapeAvanzando) && nQuieto > NTICKSENEMIGOS) {
-				if (nQuieto > NTICKENEMIGOSROCAS)
+				if (nQuieto > NTICKENEMIGOSROCAS) {
+					nQuieto = 0;
 					quitarRocas = true;
+				}
 				objActual = null;
 			}
 		// Si estoy quieto y me viene un enemigo
