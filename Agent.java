@@ -51,6 +51,8 @@ public class Agent extends BaseAgent {
 	private Observation objActual;
 	// Tiempo (ticks)
 	private int t;
+	// Representa el nº de gema que debe de coger para hacer la distancia Manhattan en modo quitar rocas
+	private int iGema;
 	// Lista de piedras para saber si ha habido cambios
 	private ArrayList<Observation> piedras = new ArrayList<>();
 	// Lista de gemas para saber si ha habido cambios
@@ -78,6 +80,7 @@ public class Agent extends BaseAgent {
 		quitarRocas = false;
 		piedras = getBouldersList(state);
 		gemasAct = getGemsList(state);
+		iGema = -1;
 		t = 0;
 		//tUltAct = 0;
 		// Primera ejecucción, buscamos los caminos a la gema para ahorrar tiempo
@@ -133,6 +136,7 @@ public class Agent extends BaseAgent {
 		if (nQuieto > NTICKSROCAS) {
 			objActual = null;
 			nQuieto = 0;
+			++iGema;
 			quitarRocas = true;
 		}
 		// Si hay un cambio o paso de espera recalculo objetivo
@@ -202,7 +206,7 @@ public class Agent extends BaseAgent {
 				} else
 					objActual = getExit(state);
 			}
-			// Camino al objetivo
+			// Camino al objetivo	
 			path = findPath(jugador, objActual);
 			// Si el camino es nulo no hace nada
 			if (path == null)
@@ -268,7 +272,8 @@ public class Agent extends BaseAgent {
 			if ((sinEscape || choqueEnemigo || sinEscapeAvanzando) && nQuieto > NTICKSENEMIGOS) {
 				if (nQuieto > NTICKENEMIGOSROCAS) {
 					nQuieto = 0;
-					quitarRocas = !quitarRocas;
+					++iGema;
+					quitarRocas = true;
 				}
 				objActual = null;
 			}
@@ -697,8 +702,8 @@ public class Agent extends BaseAgent {
 		Collections.sort(casillas, (c1, c2) -> {
 			Observation o1 = grid[(int) c1.position.x][(int) c1.position.y].get(0);
 			Observation o2 = grid[(int) c2.position.x][(int) c2.position.y].get(0);
-			int d1 = o1.getManhattanDistance(gemasAct.get(0));
-			int d2 = o2.getManhattanDistance(gemasAct.get(0));
+			int d1 = o1.getManhattanDistance(gemasAct.get(iGema % gemasAct.size()));
+			int d2 = o2.getManhattanDistance(gemasAct.get(iGema % gemasAct.size()));
 			if (d1 < d2)
 				return -1;
 			else if (d1 == d2)
