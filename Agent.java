@@ -187,7 +187,6 @@ public class Agent extends BaseAgent {
 							pathAux = findPath(nJugador, casillasBuenas.get(i));
 						Node sol = casillasBuenas.get(i);
 						objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
-						nQuieto = 0;
 					} else
 						objActual = jugador;
 					// Si hay que buscar gemas
@@ -269,7 +268,7 @@ public class Agent extends BaseAgent {
 			if ((sinEscape || choqueEnemigo || sinEscapeAvanzando) && nQuieto > NTICKSENEMIGOS) {
 				if (nQuieto > NTICKENEMIGOSROCAS) {
 					nQuieto = 0;
-					quitarRocas = true;
+					quitarRocas = !quitarRocas;
 				}
 				objActual = null;
 			}
