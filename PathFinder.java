@@ -168,103 +168,73 @@ public class PathFinder {
         return neighbours;
     }
 
-    public boolean rockAbove(Node casilla) {
-        return (isRock((int) casilla.position.x, (int) casilla.position.y - 1));
-    }
+    // --------------------------------------------------------------------
+    // Funciones auxiliares, modificación de A*
+    // --------------------------------------------------------------------
 
-
-    public boolean enemyNear(Node casilla) {
-        int nEnemigos = 0;
-
-        int x = (int) (casilla.position.x);
-        int y = (int) (casilla.position.y);
-
-        for (int i = 0; i < x_arrNeig.length; ++i) {
-            if (isEnemy(x + x_arrNeig[i], y + y_arrNeig[i]))
-                return true;
-        }
-        return false;
-    }
-
-    private boolean isRock(int x, int y) {
-        if (x < 0 || x >= grid.length) return false;
-        if (y < 0 || y >= grid[x].length) return false;
-
-        for (Observation obs : grid[x][y]) {
-            if (obs.itype == 7)
-                return true;
-        }
-        return false;
-    }
-
-    private boolean isEnemy(int x, int y) {
-
-        if (x < 0 || x >= grid.length) return false;
-        if (y < 0 || y >= grid[x].length) return false;
-
-        for (Observation obs : grid[x][y]) {
-            if (obs.itype == 10 || obs.itype == 11)
-                return true;
-        }
-        return false;
-    }
-
-
-    private boolean withinBoundries(int x, int y) {
-        return x >= 0 && x < grid.length && y >= 0 && y < grid[x].length;
-    }
-
-
-    public boolean areaEnemies(Node nodo) {
+    public boolean enemigosEnArea(Node n) {
         final int LIMITE = 5;
-
-        int x = (int) nodo.position.x;
-        int y = (int) nodo.position.y;
-
         int[] x_arrNeig = new int[]{0,    0,    -1,    1};
         int[] y_arrNeig = new int[]{-1,   1,     0,    0};
-
-        ArrayList<Pareja> abiertos = new ArrayList<>();
-        ArrayList<Node> cerrados = new ArrayList<>();
-        Node nOrigen = new Node(new Vector2d(x, y));
-        abiertos.add(new Pareja(nOrigen, 0));
+        ArrayList<Pair<Vector2d, Integer>> abiertos = new ArrayList<>();
+        ArrayList<Vector2d> cerrados = new ArrayList<>();
+        abiertos.add(new Pair<>(n.position, 0));
         while (!abiertos.isEmpty()) {
-            Pareja pareja = abiertos.get(0);
-            Node actual = pareja.first();
-            int deep = pareja.second();
-            cerrados.add(actual);
+            Pair<Vector2d, Integer> actual = abiertos.get(0);
+            cerrados.add(actual.first);
             abiertos.remove(0);
-            int xa = (int) actual.position.x;
-            int ya = (int) actual.position.y;
             for (int i = 0; i < x_arrNeig.length; ++i) {
-                int xn = xa + x_arrNeig[i];
-                int yn = ya + y_arrNeig[i];
-                if (deep < LIMITE && withinBoundries(xn, yn) && isDug(xn, yn) && !abiertos.contains(new Pareja(new Node(new Vector2d(xn, yn)), deep + 1)) && !cerrados.contains(new Node(new Vector2d(xn, yn)))) {
-                    abiertos.add(new Pareja(new Pair(new Node(new Vector2d(xn, yn)), deep + 1)));
-                    if (isEnemy(xn, yn)) {
-                        //System.out.println("Enemigo en (" + xn + ", " + yn + ")");
+                Pair<Vector2d, Integer> nuevo = new Pair<>(new Vector2d(actual.first.x + x_arrNeig[i], actual.first.y + y_arrNeig[i]), actual.second + 1);
+                if (actual.second < LIMITE && estaExcavado(nuevo.first) && !contiene(abiertos, nuevo) && !cerrados.contains(nuevo.first)) {
+                    abiertos.add(nuevo);
+                    if (esEnemigo(nuevo.first))
                         return true;
-                    }
                 }
             }
         }
         return false;
     }
 
-
-    private boolean isDug(int x, int y) {
+    private boolean esAlgo(int x, int y, int iType) {
         if (x < 0 || x >= grid.length) return false;
         if (y < 0 || y >= grid[x].length) return false;
 
-        boolean excavado = false;
-
         for (Observation obs : grid[x][y]) {
-            excavado = excavado || obs.itype == 4 || obs.itype == 0 || obs.itype == 7;
+            if (obs.itype == iType)
+                return true;
         }
-        return !excavado;
+        return false;
     }
 
+    private boolean esPiedra(int x, int y) {
+        return esAlgo(x, y, 7);
+    }
 
+    private boolean esEnemigo(int x, int y) {
+        return esAlgo(x, y, 10) || esAlgo(x, y, 11);
+    }
 
+    private boolean esEnemigo(Vector2d v) {
+        return esEnemigo((int) v.x, (int) v.y);
+    }
 
+    public boolean piedraEncima(Node casilla) {
+        return (esPiedra((int) casilla.position.x, (int) casilla.position.y - 1));
+    }
+
+    private boolean estaExcavado(int x, int y) {
+        return !esAlgo(x, y, 4) && !esAlgo(x, y, 0) && !esAlgo(x, y, 7);
+    }
+
+    private boolean estaExcavado(Vector2d v) {
+        return estaExcavado((int) v.x, (int) v.y);
+    }
+
+    private boolean contiene(ArrayList<Pair<Vector2d, Integer>> abiertos, Pair<Vector2d, Integer> nuevo) {
+        boolean res =  false;
+        for (int i = 0; i < abiertos.size() && !res; ++i)
+            if (abiertos.get(i).first.equals(nuevo.first))
+                res = true;
+        return res;
+    }
 }

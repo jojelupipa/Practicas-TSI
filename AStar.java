@@ -175,9 +175,11 @@ public class AStar
                 {
                     neighbour.totalCost = curDistance + node.totalCost;
                     neighbour.estimatedCost = heuristicEstimatedCost(neighbour, goal);
-                    if (pathfinder.areaEnemies(neighbour))
+                    // Si hay enemigos en area
+                    if (pathfinder.enemigosEnArea(neighbour))
                         neighbour.estimatedCost += 5000;
-                    if (pathfinder.rockAbove(neighbour))
+                    // Si el nodo tiene una piedra encima
+                    if (pathfinder.piedraEncima(neighbour))
                         neighbour.estimatedCost += 500;
                     neighbour.parent = node;
 
