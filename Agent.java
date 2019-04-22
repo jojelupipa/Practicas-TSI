@@ -1,6 +1,8 @@
 package practica_busqueda;
 
 import java.util.ArrayList;
+
+import com.sun.org.apache.xpath.internal.operations.Or;
 import core.game.StateObservation;
 import ontology.Types;
 import tools.ElapsedCpuTimer;
@@ -50,6 +52,9 @@ public class Agent extends BaseAgent {
 	// Lista de gemas para saber si ha habido cambios
 	private ArrayList<Observation> gemasAct = new ArrayList<>();
 
+	// --------------------------------------------------------------------
+	// Constructor
+	// --------------------------------------------------------------------
 	public Agent(StateObservation sO, ElapsedCpuTimer elapsedTimer) {
 		super(sO, elapsedTimer);
 		state = sO;
@@ -75,7 +80,9 @@ public class Agent extends BaseAgent {
 		for (Observation gem : getGemsList(state))
 			findPath(ultPos, gem);
 	}
-
+	// --------------------------------------------------------------------
+	// Funcion act
+	// --------------------------------------------------------------------
 	@Override
 	public Types.ACTIONS act(StateObservation stateObs, ElapsedCpuTimer elapsedTimer) {
 		// Actualizamos el grid y el estado actual
@@ -85,6 +92,7 @@ public class Agent extends BaseAgent {
 
 		// Si Ha habido cambio en las rocas o en las gemas limpiamos los caminos, el plan y buscamos otra gema
 		if (rocasActualizadas() || gemasActualizadas()) {
+			System.out.println("Recalculo");
 			path.clear();
 			pF.run(state);
 			gemaActual = null;
@@ -103,7 +111,7 @@ public class Agent extends BaseAgent {
 		// Aplica la rutina deliberativa
 		deliberativo();
 		// Evita situaciones de riesgo
-		evitarRiesgo();
+		Node resRiesgo = evitarRiesgo();
 		/**
 		// Si hay plan, lo ejecuto
 
@@ -154,18 +162,19 @@ public class Agent extends BaseAgent {
 		piensa = true;
 		// Aumento nº de ticks
 		++t;
-		if (t > 0) {
+		if (t > 150) {
 			try { Thread.sleep(100); } catch (InterruptedException e) { System.out.println(e); }
 		}
 
-		Types.ACTIONS sigAccion = siguienteAccion();
+		// Determina la siguiente acción del plan o del resultado de evaluarRiesgo
+		Types.ACTIONS sigAccion = siguienteAccion(resRiesgo);
 		System.out.println("T: " + elapsedTimer.elapsedMillis() + ", R: " + elapsedTimer.remainingTimeMillis());
 		return sigAccion;
 	}
 	// --------------------------------------------------------------------
 	// Funciones principales
 	// --------------------------------------------------------------------
-	// El agente reacciona si tiene un enemigo justo al lado, una roca encima o está en una situación de riesgo potencial
+	// El agente reacciona si tiene un enemigo justo al lado o una roca encima
 	private void reactivo() {
 		PlayerObservation jugador = getPlayer(state);
 		Orientation orJ = jugador.getOrientation();
@@ -173,25 +182,14 @@ public class Agent extends BaseAgent {
 		boolean enemigoProximo = nEnemigoCerca(jugador) > 0;
 		// Roca encima
 		boolean rocaEncima = esPiedra(casillaDir(jugador, Orientation.N, 1));
-		// Si hay camino entre enemigo y agente a 2 casillas en la misma dirección, y estamos mirando a una zona con obstáculos
-		boolean riesgoPotencial = false;
-
-		// Miramos los vecinos para ver si está excavado (camino libre) y hay un enemigo adyacente
-		for (Node vecino : obtenerVecinos(jugador))
-			if (estaExcavado(vecino) && nEnemigoCerca(vecino) > 0)
-				riesgoPotencial = true;
-		// Si se cumple la condición anterior, ahora se comprueba si la casilla a la que esta orientado el jugador y
-		// la casilla por encima de esa, alguna de ellas es un obstáculo
-		// Nota: para el sur solo nos importa una casilla hacia abajo
-		riesgoPotencial = riesgoPotencial && (esObstaculo(casillaDir(jugador, orJ, 1)) || esObstaculo(casillaDir(casillaDir(jugador, orJ, 1), Orientation.N, 1)));
 
 		// Si alguna de las condiciones se cumple intenta escapar
-		if (enemigoProximo || rocaEncima || riesgoPotencial) {
+		if (enemigoProximo || rocaEncima) {
 			// Reactivo on
 			piensa = false;
 			// Limpio plan y me muevo hacia donde me diga el plan de escape
 			path.clear();
-			path.add(evaluarEscape(new Node(new Vector2d(jugador.getX(), jugador.getY()))));
+			path.add(evaluarEscape());
 		}
 	}
 	// --------------------------------------------------------------------
@@ -248,11 +246,12 @@ public class Agent extends BaseAgent {
 	}
 	// --------------------------------------------------------------------
 	// Transforma el plan en una acción
-	private Types.ACTIONS siguienteAccion() {
+	private Types.ACTIONS siguienteAccion(Node resRiesgo) {
 		Types.ACTIONS accion = Types.ACTIONS.ACTION_NIL;
 		PlayerObservation jugador = getPlayer(state);
 		if (!path.isEmpty()) {
-			Node siguientePos = path.get(0);
+			// Si resRiesgo no es null toma esa acción, si no, ejecuta el plan
+			Node siguientePos = resRiesgo == null ? path.get(0) : resRiesgo;
 			if (siguientePos.position.x != jugador.getX()) {
 				if (siguientePos.position.x > jugador.getX())
 					accion = Types.ACTIONS.ACTION_RIGHT;
@@ -268,36 +267,43 @@ public class Agent extends BaseAgent {
 		return accion;
 	}
 	// --------------------------------------------------------------------ç
-	// Evita una posible situación de riesgo
-	private void evitarRiesgo() {
+	// Evita una posible situación de riesgo preparandose en posición de huida pero sin moverse de casilla
+	private Node evitarRiesgo() {
+		Node res = null;
 		if (!path.isEmpty() && piensa) {
 			Node siguientePos = path.get(0);
-			Node res = null;
 			PlayerObservation jugador = getPlayer(state);
 			Node nJugador = new Node(new Vector2d(jugador.getX(), jugador.getY()));
-			// Si el siguiente movimiento a una zona donde puede estar cayendo una roca
+			// Si hay camino entre enemigo y agente a 2 casillas en la misma dirección, y estamos mirando a una zona con obstáculos
+			boolean riesgoPotencial = false;
+			// Miramos los vecinos para ver si está excavado (camino libre) y hay un enemigo adyacente
+			for (Node vecino : obtenerVecinos(jugador))
+				if (estaExcavado(vecino) && nEnemigoCerca(vecino) > 0)
+					riesgoPotencial = true;
+			// Si se cumple la condición anterior, ahora comprobamos si la siguiente posición tiene un obstáculo que nos
+			// bloquearía el escape en caso de que viniese el enemigo
+			riesgoPotencial = riesgoPotencial && (esObstaculo(siguientePos) || esObstaculo(casillaDir(siguientePos, Orientation.N, 1)));
 
-			// Si hay un enemigo al lado de la posicion a la que voy
-			if (nEnemigoCerca(siguientePos) > 0) {
-				res = nJugador;
-				// Si el personaje está orientado a donde va a ir hay que cambiar la orientación, si no se queda igual
-				if (casillaDir(nJugador, jugador.getOrientation(), 1).equals(siguientePos))
-					res = evaluarEscape(siguientePos);
+			// Si hay riesgo potencial o tengo un enemigo al lado de la posición a la que voy, me pareparo para huir
+			if (riesgoPotencial || nEnemigoCerca(siguientePos) > 0) {
+				res = evaluarEscape();
+				// Si ya estoy mirando hacia el escape me quedo quieto;
+				if (casillaDir(jugador, jugador.getOrientation(), 1).equals(res))
+					res = nJugador;
+			// Si el siguiente movimiento es una casilla con una roca cayendo
 			} else if (esPiedra(casillaDir(siguientePos, Orientation.N, 1)) && estaExcavado(siguientePos) && !esGema(siguientePos))
 				res = nJugador;
-
-
 		}
+		return res;
 	}
 	// --------------------------------------------------------------------
 	// Subfunciones
 	// --------------------------------------------------------------------
 	// Devuelve si las rocas se han movido
 	private boolean rocasActualizadas() {
-		boolean res = false;
+		boolean res;
 		ArrayList<Observation> nuevasPiedras = getBouldersList(state);
-		if (nuevasPiedras.size() != piedras.size())
-			res = true;
+		res = nuevasPiedras.size() != piedras.size();
 		if (!res)
 			for (int i = 0; i < piedras.size() && !res; ++i)
 				if (piedras.get(i).getX() != nuevasPiedras.get(i).getX() || piedras.get(i).getY() != nuevasPiedras.get(i).getY())
@@ -315,9 +321,10 @@ public class Agent extends BaseAgent {
 	}
 	// --------------------------------------------------------------------
 	// Devuelvo un nodo al que escapar
-	private Node evaluarEscape(Node posicion) {
+	private Node evaluarEscape() {
 		Node res;
-		ArrayList<Node> vecinos = obtenerVecinos(posicion);
+		PlayerObservation jugador = getPlayer(state);
+		ArrayList<Node> vecinos = obtenerVecinos(jugador);
 		if (!vecinos.isEmpty()) {
 			// Asigno prioridades, ordeno y obtengo la más promotedora
 			ArrayList<Pair<Node, Integer> > posibilidades = new ArrayList<>();
@@ -325,13 +332,14 @@ public class Agent extends BaseAgent {
 				posibilidades.add(new Pair<>(vecino, darPrioridad(vecino)));
 			}
 			ordenarPrioridad(posibilidades);
+			System.out.println("----------------");
 			for (Pair<Node, Integer> par : posibilidades)
 				System.out.println(par.first.position.x + ", " + par.first.position.y + ", v:" + par.second);
 				System.out.println("----------------");
 			res = posibilidades.get(0).first;
 		} else
 			// Si no hay vecinos posibles se queda quieto
-			res = posicion;
+			res = new Node(new Vector2d(jugador.getX(), jugador.getY()));
 		return res;
 	}
 	// --------------------------------------------------------------------
@@ -355,9 +363,6 @@ public class Agent extends BaseAgent {
 		// Si tiene una roca encima añade carga media-alta
 		if (esPiedra(casillaDir(vecino, Orientation.N, 1)))
 			prioridad += 30;
-		// Si hay una gema es mejor
-		if (nGemasCerca(vecino) > 0)
-			prioridad -= 10;
 
 		return prioridad;
 	}
@@ -468,13 +473,12 @@ public class Agent extends BaseAgent {
 	private int nEnemigoCerca(int x, int y) {
 		int nEnemigos = 0;
 
-		int[] x_arrNeig = new int[]{0,    0,    -1,    1};
-		int[] y_arrNeig = new int[]{-1,   1,     0,    0};
+		Orientation orientaciones[] = new Orientation[]{Orientation.N, Orientation.S, Orientation.E, Orientation.W};
 
-		for (int i = 0; i < x_arrNeig.length; ++i) {
-			if (esEnemigo(x + x_arrNeig[i], y + y_arrNeig[i]))
+		for (Orientation orient : orientaciones)
+			if (esEnemigo(casillaDir(x, y, orient, 1)))
 				++nEnemigos;
-		}
+
 		return nEnemigos;
 	}
 
@@ -576,12 +580,9 @@ public class Agent extends BaseAgent {
 	}
 	// --------------------------------------------------------------------
 	// Busca el tipo de cosas que se indica con n (0 gemas, 1 casillas sin excavar)
-	// Para buscar enemigos solo busca 1
 	private int buscarEnArea(int x, int y, int n) {
 		int contador = 0;
-
-		int[] x_arrNeig = new int[]{0,    0,    -1,    1};
-		int[] y_arrNeig = new int[]{-1,   1,     0,    0};
+		Orientation orientaciones[] = new Orientation[]{Orientation.N, Orientation.S, Orientation.E, Orientation.W};
 
 		ArrayList<Vector2d> abiertos = new ArrayList<>();
 		ArrayList<Vector2d> cerrados = new ArrayList<>();
@@ -590,10 +591,9 @@ public class Agent extends BaseAgent {
 			Vector2d actual = abiertos.get(0);
 			abiertos.remove(0);
 			cerrados.add(actual);
-			for (int i = 0; i < x_arrNeig.length; ++i) {
-				Vector2d nuevo = new Vector2d(actual);
-				nuevo.x += x_arrNeig[i];
-				nuevo.y += y_arrNeig[i];
+
+			for (Orientation orient : orientaciones) {
+				Vector2d nuevo = casillaDir(new Node(actual), orient, 1).position;
 				boolean condicion = false;
 				if (n == 0)
 					condicion = esGema(nuevo);
@@ -657,8 +657,8 @@ public class Agent extends BaseAgent {
 		ArrayList<Node> camino = findPath(jugador, gema);
 
 		//res += esPiedra(casillaDir(gema, Orientation.N, 1)) ? HAYPIEDRA : 0;
-		//res += nGemasCerca(gema.getX(), gema.getY()) > 0 ? HAYGEMAS : 0;
-		res += enemigosArea(gema.getX(), gema.getY()) > 0 ? HAYENEMIGOS : 0;
+		//res += nGemasCerca(gema) > 0 ? HAYGEMAS : 0;
+		res += enemigosArea(gema) > 0 ? HAYENEMIGOS : 0;
 		if (camino != null && !camino.isEmpty()) {
 			res += camino.size();
 			res += caminoConPiedras(camino) ? CAMINOPIEDRAS : 0;
