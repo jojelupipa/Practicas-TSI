@@ -110,7 +110,7 @@ public class Agent extends BaseAgent {
 		// Aumento nº de ticks
 		++t;
 		if (t > 0) {
-			try { Thread.sleep(100); } catch (InterruptedException e) { System.out.println(e); }
+			try { Thread.sleep(0); } catch (InterruptedException e) { System.out.println(e); }
 		}
 		// System.out.println("T: " + elapsedTimer.elapsedMillis() + ", R: " + elapsedTimer.remainingTimeMillis());
 		return sigAccion;
@@ -189,8 +189,12 @@ public class Agent extends BaseAgent {
 						int i;
 						for (i = 0; i < casillasBuenas.size() && pathAux == null; ++i)
 							pathAux = findPath(nJugador, casillasBuenas.get(i));
-						Node sol = casillasBuenas.get(i);
-						objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
+						if (pathAux == null)
+							objActual = jugador;
+						else {
+							Node sol = casillasBuenas.get(i);
+							objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
+						}
 					} else
 						objActual = jugador;
 					// Si hay que buscar gemas
@@ -202,7 +206,10 @@ public class Agent extends BaseAgent {
 						gemList.add(new Pair<>(gem, heuristicaGema(gem)));
 					}
 					ordenarGemas(gemList);
-					objActual = gemList.get(0).first;
+					if (!gemList.isEmpty())
+						objActual = gemList.get(0).first;
+					else
+						objActual = jugador;
 				} else
 					objActual = getExit(state);
 			}
