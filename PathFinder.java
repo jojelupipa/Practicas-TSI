@@ -13,35 +13,6 @@ import java.util.Vector;
  * Created by dperez on 14/01/16.
  */
 
-class Pareja {
-
-    private Node nodo;
-    private int deep;
-
-    public boolean equals(Pareja obj) {
-        return this.nodo == obj.nodo;
-    }
-
-    public Pareja(Node nodo, int n) {
-        this.nodo = nodo;
-        this.deep = n;
-    }
-
-    public Pareja(Pair<Node, Integer> pair) {
-        this.nodo = pair.first;
-        this.deep = pair.second;
-    }
-
-    public Node first() {
-        return nodo;
-    }
-
-    public int second() {
-        return deep;
-    }
-}
-
-
 public class PathFinder {
 
     private AStar astar;
