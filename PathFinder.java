@@ -7,6 +7,7 @@ import tools.Pair;
 import tools.Vector2d;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * Created by dperez on 14/01/16.
@@ -43,7 +44,7 @@ class Pareja {
 
 public class PathFinder {
 
-    public AStar astar;
+    private AStar astar;
     public StateObservation state;
 
     public boolean VERBOSE = false;
@@ -121,6 +122,10 @@ public class PathFinder {
     public ArrayList<Node> getPath(Vector2d start, Vector2d end)
     {
         return astar.getPath(new Node(start), new Node(end));
+    }
+
+    public ArrayList<Node> findPath(Vector2d start, Vector2d end) {
+        return astar.findPath(new Node(start), new Node(end));
     }
 
     private void runAll(int i, int j) {
