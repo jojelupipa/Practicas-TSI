@@ -26,7 +26,7 @@ public class Agent extends BaseAgent {
 	// Nº de ticks antes de crear otro plan
 	private final static int NTICKSESPERA = 7;
 	// Nº de ticks antes de pasar a modo quitar rocas
-	private final static int NTICKSROCAS = 20;
+	private final static int NTICKSROCAS = 10;
 	// Nº de ticks max esperando por culpa de enemigos
 	private final static int NTICKSENEMIGOS = 3;
 	// Nº de ticks max esperando por culpa de enemigos (modo quitar rocas)
@@ -109,8 +109,8 @@ public class Agent extends BaseAgent {
 		piensa = true;
 		// Aumento nº de ticks
 		++t;
-		if (t > 165) {
-			try { Thread.sleep(0); } catch (InterruptedException e) { System.out.println(e); }
+		if (t > 0) {
+			try { Thread.sleep(100); } catch (InterruptedException e) { System.out.println(e); }
 		}
 		// System.out.println("T: " + elapsedTimer.elapsedMillis() + ", R: " + elapsedTimer.remainingTimeMillis());
 		return sigAccion;
@@ -206,7 +206,7 @@ public class Agent extends BaseAgent {
 				} else
 					objActual = getExit(state);
 			}
-			// Camino al objetivo	
+			// Camino al objetivo
 			path = findPath(jugador, objActual);
 			// Si el camino es nulo no hace nada
 			if (path == null)
