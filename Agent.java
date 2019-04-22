@@ -290,7 +290,7 @@ public class Agent extends BaseAgent {
 			} else if (piedraCayendo || sinEscapeAvanzando)
 				res = nJugador;
 
-			// Si llevo esperando un poco enrocado
+			// Si llevo esperando un poco, evitamos estancamientos
 			if ((sinEscape || choqueEnemigo || sinEscapeAvanzando) && nQuieto > NTICKSENEMIGOS) {
 				if (nQuieto > NTICKENEMIGOSROCAS) {
 					nQuieto = 0;
