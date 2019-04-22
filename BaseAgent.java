@@ -123,12 +123,13 @@ public abstract class BaseAgent extends AbstractPlayer{
         ArrayList<Observation> finalGems = new ArrayList<Observation>();
 
         Observation new_obs;
-        
-        for (core.game.Observation obs : gems[0]){
-            new_obs = new Observation(obs, stateObs.getBlockSize());
-            
-            if (new_obs.getType() != null)
-                finalGems.add(new_obs);
+        if(gems != null) {
+	        for (core.game.Observation obs : gems[0]){
+	            new_obs = new Observation(obs, stateObs.getBlockSize());
+	            
+	            if (new_obs.getType() != null)
+	                finalGems.add(new_obs);
+	        }
         }
         
         return finalGems;
