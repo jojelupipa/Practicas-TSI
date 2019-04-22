@@ -49,8 +49,8 @@ public class Agent extends BaseAgent {
 	private Observation objActual;
 	// Tiempo (ticks)
 	private int t;
-	// Representa el nº de gema que debe de coger para hacer la distancia Manhattan en modo quitar rocas
-	private int iGema;
+	// Representa el nº de piedra que debe de coger para hacer la distancia Manhattan en modo quitar rocas
+	private int iPiedra;
 	// Lista de piedras para saber si ha habido cambios
 	private ArrayList<Observation> piedras = new ArrayList<>();
 	// Lista de gemas para saber si ha habido cambios
@@ -78,7 +78,7 @@ public class Agent extends BaseAgent {
 		quitarRocas = false;
 		piedras = getBouldersList(state);
 		gemasAct = getGemsList(state);
-		iGema = -1;
+		iPiedra = -1;
 		t = 0;
 		//tUltAct = 0;
 		// Primera ejecucción, buscamos los caminos a la gema para ahorrar tiempo
@@ -134,13 +134,14 @@ public class Agent extends BaseAgent {
 		if (nQuieto > NTICKSROCAS) {
 			objActual = null;
 			nQuieto = 0;
-			++iGema;
+			++iPiedra;
 			quitarRocas = true;
 		}
 		// Si hay un cambio o paso de espera recalculo objetivo
 		if (rocasActualizadas() || gemasActualizadas() || nQuieto > NTICKSESPERA) {
 			objActual = null;
 			quitarRocas = false;
+			iPiedra = -1;
 		}
 	}
 
@@ -180,16 +181,32 @@ public class Agent extends BaseAgent {
 						if (!esObstaculo(casillaBuena))
 							casillasBuenas.add(casillaBuena);
 					}
+					// Si no hay casillas alcanzables me paro
 					if (!casillasBuenas.isEmpty()) {
+						// Ordeno según la distancia a la gema más cercana o la salida (si tengo todas las gemas)
 						ordenarCasillas(casillasBuenas);
 						Node nJugador = new Node(new Vector2d(jugador.getX(), jugador.getY()));
 						ArrayList<Node> pathAux = null;
+						int ultPath = -1;
 						int i;
-						for (i = 0; i < casillasBuenas.size() && pathAux == null; ++i)
+						int j = 0;
+						// Queremos encontrar el iPiedra-ésimo camino no nulo (iPiedra va cambiando para evitar aprietos)
+						for (i = 0; i < casillasBuenas.size() && pathAux == null; ++i) {
 							pathAux = findPath(nJugador, casillasBuenas.get(i));
-						if (pathAux == null)
-							objActual = jugador;
-						else {
+							if (pathAux != null && j != (iPiedra % casillasBuenas.size())) {
+								++j;
+								pathAux = null;
+								ultPath = i;
+							}
+						}
+						i -= 1;
+						if (pathAux == null) {
+							if (ultPath != -1) {
+								Node sol = casillasBuenas.get(ultPath);
+								objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
+							} else
+								objActual = jugador;
+						} else {
 							Node sol = casillasBuenas.get(i);
 							objActual = grid[(int) sol.position.x][(int) sol.position.y].get(0);
 						}
@@ -277,7 +294,7 @@ public class Agent extends BaseAgent {
 			if ((sinEscape || choqueEnemigo || sinEscapeAvanzando) && nQuieto > NTICKSENEMIGOS) {
 				if (nQuieto > NTICKENEMIGOSROCAS) {
 					nQuieto = 0;
-					++iGema;
+					++iPiedra;
 					quitarRocas = true;
 				}
 				objActual = null;
@@ -707,7 +724,7 @@ public class Agent extends BaseAgent {
 		Collections.sort(casillas, (c1, c2) -> {
 			Observation o1 = grid[(int) c1.position.x][(int) c1.position.y].get(0);
 			Observation o2 = grid[(int) c2.position.x][(int) c2.position.y].get(0);
-			Observation target = gemasAct.isEmpty() ? getExit(state) : gemasAct.get(iGema % gemasAct.size());
+			Observation target = getNumGems(state) < REQUIREDGEMS ? gemasAct.get(0) : getExit(state);
 			int d1 = o1.getManhattanDistance(target);
 			int d2 = o2.getManhattanDistance(target);
 
