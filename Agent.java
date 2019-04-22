@@ -1,8 +1,6 @@
 package practica_busqueda;
 
 import java.util.ArrayList;
-
-import com.sun.org.apache.regexp.internal.RE;
 import core.game.StateObservation;
 import ontology.Types;
 import tools.ElapsedCpuTimer;
@@ -709,8 +707,10 @@ public class Agent extends BaseAgent {
 		Collections.sort(casillas, (c1, c2) -> {
 			Observation o1 = grid[(int) c1.position.x][(int) c1.position.y].get(0);
 			Observation o2 = grid[(int) c2.position.x][(int) c2.position.y].get(0);
-			int d1 = o1.getManhattanDistance(gemasAct.get(iGema % gemasAct.size()));
-			int d2 = o2.getManhattanDistance(gemasAct.get(iGema % gemasAct.size()));
+			Observation target = gemasAct.isEmpty() ? getExit(state) : gemasAct.get(iGema % gemasAct.size());
+			int d1 = o1.getManhattanDistance(target);
+			int d2 = o2.getManhattanDistance(target);
+
 			if (d1 < d2)
 				return -1;
 			else if (d1 == d2)
